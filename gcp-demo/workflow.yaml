@@ -1,0 +1,100 @@
+main:
+  params: [input]
+  steps:
+    - init:
+        assign:
+          - baseUrl: "http://localhost:8080"
+          - bookingId: ${input.bookingId}
+          - serviceIds: ${input.serviceIds}
+          - discountCode: ${input.discountCode}
+          - amount: ${input.amount}
+
+    # STEP 1: Reserve Slots
+    - reserve_slots:
+        try:
+          call: http.post
+          args:
+            url: ${baseUrl + "/inventory/reserve"}
+            body:
+              bookingId: ${bookingId}
+              serviceIds: ${serviceIds}
+          result: inventoryResult
+        except:
+          as: e
+          steps:
+            - return_inventory_fail:
+                return: "Booking Failed: Slots Unavailable"
+
+    # STEP 2: Apply Discount (Optional)
+    - apply_discount:
+        try:
+          call: http.post
+          args:
+            url: ${baseUrl + "/discount/apply"}
+            body:
+              bookingId: ${bookingId}
+              code: ${discountCode}
+          result: discountResult
+        except:
+          as: e
+          # Discount failure doesn't stop the flow, just 0 discount? 
+          # Or if invalid code, fail? Let's assume failure stops flow for this demo.
+          steps:
+             - compensate_inventory_discount:
+                call: http.post
+                args:
+                  url: ${baseUrl + "/inventory/compensate"}
+                  body:
+                    bookingId: ${bookingId}
+             - return_discount_fail:
+                return: "Booking Failed: Invalid Discount Code"
+
+    # STEP 3: Payment
+    - process_payment:
+        try:
+          call: http.post
+          args:
+            url: ${baseUrl + "/payment/process"}
+            body:
+              bookingId: ${bookingId}
+              amount: ${amount - (discountResult.body.discountAmount)}
+          result: paymentResult
+        except:
+          as: e
+          steps:
+            - log_payment_fail:
+                call: sys.log
+                args:
+                  json: {message: "Payment failed. Compensating...", error: ${e}}
+            # COMPENSATION: Release Slots
+            - compensate_inventory_payment:
+                call: http.post
+                args:
+                  url: ${baseUrl + "/inventory/compensate"}
+                  body:
+                    bookingId: ${bookingId}
+            - return_payment_fail:
+                return: "Booking Failed: Payment Declined"
+
+    # STEP 4: Notify & Confirm
+    - notify_patient:
+        call: http.post
+        args:
+          url: ${baseUrl + "/notification/send"}
+          body:
+            bookingId: ${bookingId}
+            message: "Your appointment is confirmed!"
+        result: notificationResult
+
+    - confirm_booking:
+        call: http.post
+        args:
+          url: ${baseUrl + "/booking/confirm"}
+          body:
+            bookingId: ${bookingId}
+        result: bookingResult
+
+    - return_success:
+        return:
+          status: "Success"
+          bookingId: ${bookingId}
