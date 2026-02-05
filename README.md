@@ -1,5 +1,5 @@
 # Event-Driven Booking System
-This app is built with React JS, Node JS, and deployed on vercel and GCP(pending due to limited credits).
+This app is built with React JS, Node JS, and deployed on vercel and GCP (pending due to limited credits).
 
 # Deploying to Google Cloud Run
 
