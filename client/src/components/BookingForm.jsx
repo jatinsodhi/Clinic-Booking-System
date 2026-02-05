@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_ORIGIN || 'http://localhost:3000';
+
 const SERVICES = [
     { id: 'srv_1', name: 'General Checkup', price: 500 },
     { id: 'srv_2', name: 'X-Ray', price: 1200 },
@@ -24,7 +26,7 @@ export default function BookingForm() {
     React.useEffect(() => {
         const fetchQuota = async () => {
             try {
-                const res = await axios.get('http://localhost:3000/api/quota');
+                const res = await axios.get(`${API_URL}/api/quota`);
                 setQuota(res.data);
             } catch (err) {
                 console.error("Failed to fetch quota", err);
@@ -64,7 +66,7 @@ export default function BookingForm() {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post('http://localhost:3000/api/book', formData);
+            await axios.post(`${API_URL}/api/book`, formData);
         } catch (err) {
             console.error(err);
             alert('Failed to submit booking');
@@ -74,7 +76,7 @@ export default function BookingForm() {
     };
 
     const resetQuota = async () => {
-        await axios.post('http://localhost:3000/api/reset-quota');
+        await axios.post(`${API_URL}/api/reset-quota`);
         alert('Quota reset!');
     };
 
@@ -88,11 +90,11 @@ export default function BookingForm() {
     //     });
 
     //     if (type === 'POSITIVE') {
-    //         await axios.post('http://localhost:3000/api/reset-quota');
+    //         await axios.post(`${API_URL}/api/reset-quota`);
     //     } else if (type === 'QUOTA_FAIL') {
     //         await axios.post('http://localhost:3000/api/test/fill-quota');
     //     } else if (type === 'PAYMENT_FAIL') {
-    //         await axios.post('http://localhost:3000/api/reset-quota');
+    //         await axios.post(`${API_URL}/api/reset-quota`);
     //         await axios.post('http://localhost:3000/api/test/fail-next-payment');
     //     }
     // };
@@ -109,11 +111,11 @@ export default function BookingForm() {
         });
 
         if (type === 'POSITIVE') {
-            await axios.post('http://localhost:3000/api/reset-quota');
+            await axios.post(`${API_URL}/api/reset-quota`);
         } else if (type === 'QUOTA_FAIL') {
-            await axios.post('http://localhost:3000/api/test/fill-quota');
+            await axios.post(`${API_URL}/api/test/fill-quota`);
         } else if (type === 'PAYMENT_FAIL') {
-            await axios.post('http://localhost:3000/api/reset-quota');
+            await axios.post(`${API_URL}/api/reset-quota`);
             await axios.post('http://localhost:3000/api/test/fail-next-payment');
         }
     };
